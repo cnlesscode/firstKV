@@ -3,6 +3,8 @@ package firstKV
 import (
 	"encoding/json"
 	"net"
+
+	"github.com/cnlesscode/gotool"
 )
 
 // 接收消息结构体
@@ -97,20 +99,23 @@ func Send(conn net.Conn, msg ReceiveMessage) (ResponseMessage, error) {
 	defer conn.Close()
 	response := ResponseMessage{}
 	msgByte, _ := json.Marshal(msg)
-	_, err := conn.Write(msgByte)
+
+	// 写消息
+	err := gotool.WriteTCPResponse(conn, msgByte)
 	if err != nil {
 		return response, err
 	}
+
 	// 读取消息
-	buf := make([]byte, 51200)
-	n, err := conn.Read(buf)
+	buf, err := gotool.ReadTCPResponse(conn)
 	if err != nil {
 		return response, err
 	}
-	buf = buf[0:n]
 	err = json.Unmarshal(buf, &response)
 	if err != nil {
 		return response, err
 	}
+
+	// 返回消息
 	return response, nil
 }
