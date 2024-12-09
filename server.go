@@ -46,17 +46,13 @@ func (t *TCPServer) Accept() {
 func (t *TCPServer) Handle(conn net.Conn) {
 	for {
 		// 创建字节切片
-		buf := make([]byte, 2048)
-		// 读取客户端发送的数据
-		// 若无消息协程会发生阻塞
-		n, err := conn.Read(buf)
+		buf, err := gotool.ReadTCPResponse(conn)
 		if err != nil {
 			// 退出协程
 			conn.Close()
 			break
 		}
 		// 处理消息
-		buf = buf[:n]
 		HandleMessage(conn, buf)
 	}
 }

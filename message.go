@@ -34,7 +34,7 @@ func HandleMessage(conn net.Conn, msgByte []byte) {
 	msg := ReceiveMessage{}
 	err := json.Unmarshal(msgByte, &msg)
 	if err != nil {
-		conn.Write(ResponseResult(200300, "消息格式错误"))
+		gotool.WriteTCPResponse(conn, ResponseResult(200300, "消息格式错误"))
 		return
 	}
 	// 根据消息类型，调用不同的处理函数
@@ -52,36 +52,36 @@ func HandleMessage(conn net.Conn, msgByte []byte) {
 				Set(msg.Key, dataOld)
 			}
 		}
-		conn.Write(ResponseResult(0, string(ResponseResult(0, "ok"))))
+		gotool.WriteTCPResponse(conn, ResponseResult(0, string(ResponseResult(0, "ok"))))
 	} else if msg.Action == "get mqServers" {
 		data, ok := Get(msg.Key)
 		if ok {
 			dataString, err := json.Marshal(data)
 			if err != nil {
-				conn.Write(ResponseResult(200100, err.Error()))
+				gotool.WriteTCPResponse(conn, ResponseResult(200100, err.Error()))
 				return
 			}
-			conn.Write(ResponseResult(0, string(dataString)))
+			gotool.WriteTCPResponse(conn, ResponseResult(0, string(dataString)))
 		} else {
-			conn.Write(ResponseResult(200200, msg.Key+" 不存在"))
+			gotool.WriteTCPResponse(conn, ResponseResult(200200, msg.Key+" 不存在"))
 		}
 	} else if msg.Action == "remove mqServer" {
 		data, ok := Get(msg.Key)
 		if !ok {
-			conn.Write(ResponseResult(0, string(ResponseResult(0, "ok"))))
+			gotool.WriteTCPResponse(conn, ResponseResult(0, string(ResponseResult(0, "ok"))))
 			return
 		} else {
 			mapData, ok := data.(FirstMQAddrs)
 			if !ok {
-				conn.Write(ResponseResult(200300, "服务端数据格式错误"))
+				gotool.WriteTCPResponse(conn, ResponseResult(200300, "服务端数据格式错误"))
 				return
 			}
 			delete(mapData, msg.Data.Addr)
 			Set(msg.Key, mapData)
-			conn.Write(ResponseResult(0, "ok"))
+			gotool.WriteTCPResponse(conn, ResponseResult(0, "ok"))
 		}
 	} else {
-		conn.Write(ResponseResult(400400, ""))
+		gotool.WriteTCPResponse(conn, ResponseResult(400400, ""))
 	}
 }
 
