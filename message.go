@@ -19,8 +19,10 @@ type ResponseMessage struct {
 }
 
 type FirstMQAddr struct {
+	Host     string
+	Port     string
 	Addr     string
-	DateTime string
+	JoinTime string
 }
 
 type FirstMQAddrs map[string]FirstMQAddr
