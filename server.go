@@ -52,7 +52,6 @@ func (t *TCPServer) Handle(conn net.Conn) {
 		n, err := conn.Read(buf)
 		if err != nil {
 			// 退出协程
-			log.Println("FirstKV : 客户端连接断开")
 			conn.Close()
 			break
 		}
