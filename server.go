@@ -1,6 +1,7 @@
 package firstKV
 
 import (
+	"log"
 	"net"
 
 	"github.com/cnlesscode/gotool"
@@ -21,7 +22,7 @@ func NewTCPServer(addr string) *TCPServer {
 	if err != nil {
 		panic(err)
 	}
-	gotool.Loger.Infoln("✔ FirstKV : 服务启动成功, 端口" + addr)
+	log.Println("✔ FirstKV : 服务启动成功, 端口" + addr)
 	// 返回实例
 	return &TCPServer{listener: listener}
 }
@@ -51,7 +52,7 @@ func (t *TCPServer) Handle(conn net.Conn) {
 		n, err := conn.Read(buf)
 		if err != nil {
 			// 退出协程
-			gotool.Loger.Debugln("FirstKV : 客户端连接断开")
+			log.Println("FirstKV : 客户端连接断开")
 			conn.Close()
 			break
 		}
