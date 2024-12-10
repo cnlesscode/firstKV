@@ -95,6 +95,7 @@ func ResponseResult(errcode int, data string) []byte {
 	return responseMessageByte
 }
 
+// 此函数用于其他工具调用 FirstKV 时使用
 func Send(conn net.Conn, msg ReceiveMessage) (ResponseMessage, error) {
 	defer conn.Close()
 	response := ResponseMessage{}
