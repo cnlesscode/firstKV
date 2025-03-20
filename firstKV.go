@@ -48,7 +48,7 @@ func Init() {
 	// 间隔5分钟检查有效期
 	go func() {
 		for {
-			time.Sleep(5 * time.Second)
+			time.Sleep(5 * time.Minute)
 			CheckExpirationTime()
 		}
 	}()
@@ -56,7 +56,6 @@ func Init() {
 
 // 有效期检查
 func CheckExpirationTime() {
-	println("FirstKV 检查有效期")
 	firstKVMap.Range(func(key, value any) bool {
 		changed := false
 		if value, ok := value.(map[string]Item); ok {
