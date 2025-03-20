@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/cnlesscode/gotool/gfs"
 )
@@ -37,13 +38,42 @@ func Init() {
 			continue
 		}
 		// 解析数据
-		mapData := FirstMQAddrs{}
+		mapData := make(map[string]Item, 0)
 		err = json.Unmarshal(content, &mapData)
 		if err != nil {
 			continue
 		}
 		firstKVMap.Store(v.Name[0:len(v.Name)-5], mapData)
 	}
+	// 间隔5分钟检查有效期
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			CheckExpirationTime()
+		}
+	}()
+}
+
+// 有效期检查
+func CheckExpirationTime() {
+	println("FirstKV 检查有效期")
+	firstKVMap.Range(func(key, value any) bool {
+		changed := false
+		if value, ok := value.(map[string]Item); ok {
+			for k, v := range value {
+				if v.ExpirationTime < 0 {
+					continue
+				} else if v.ExpirationTime < time.Now().Unix() {
+					RemoveItem(key.(string), k)
+					changed = true
+				}
+			}
+			if changed {
+				SaveDataToLog(key.(string))
+			}
+		}
+		return true
+	})
 }
 
 func Set(k string, v any) {
@@ -51,13 +81,69 @@ func Set(k string, v any) {
 	SaveDataToLog(k)
 }
 
+func SetItem(mainKey, itemKey string, item Item, expirationTime int64) {
+	// 获取主库
+	mainDB, ok := Get(mainKey)
+	item.CreateTime = time.Now().Unix()
+	if expirationTime < 0 {
+		item.ExpirationTime = -1
+	} else {
+		item.ExpirationTime = item.CreateTime + expirationTime
+	}
+	// 主库为空
+	if !ok {
+		Set(mainKey, map[string]Item{itemKey: item})
+	} else {
+		// 已存在数据
+		dataOld, ok := mainDB.(map[string]Item)
+		if ok {
+			dataOld[itemKey] = item
+			Set(mainKey, dataOld)
+		}
+	}
+}
+
 func Get(k string) (any, bool) {
 	return firstKVMap.Load(k)
 }
 
-func Delete(k string) {
-	firstKVMap.Delete(k)
-	os.Remove(filepath.Join(FirstKVdataLogsDir, k+".json"))
+func GetItem(mainKey, itemKey string) (Item, bool) {
+	mainDB, ok := Get(mainKey)
+	// 主库为空
+	if !ok {
+		return Item{}, false
+	}
+	data, ok := mainDB.(map[string]Item)
+	if !ok {
+		return Item{}, false
+	}
+	item, ok := data[itemKey]
+	return item, ok
+}
+
+func Remove(mainKey string) {
+	// 获取主库
+	_, ok := Get(mainKey)
+	if !ok {
+		return
+	}
+	firstKVMap.Delete(mainKey)
+	os.Remove(filepath.Join(FirstKVdataLogsDir, mainKey+".json"))
+}
+
+func RemoveItem(mainKey, itemKey string) {
+	// 获取主库
+	mainDB, ok := Get(mainKey)
+	// 主库为空
+	if !ok {
+		return
+	}
+	data, ok := mainDB.(map[string]Item)
+	if !ok {
+		return
+	}
+	delete(data, itemKey)
+	Set(mainKey, data)
 }
 
 func SaveDataToLog(k string) error {
