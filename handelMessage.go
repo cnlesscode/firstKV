@@ -69,6 +69,11 @@ func HandleMessage(conn net.Conn, msgByte []byte) {
 		gotool.WriteTCPResponse(
 			conn, ResponseResult(0, "ok"),
 		)
+	} else if msg.Action == "removeItem" {
+		RemoveItem(msg.MainKey, msg.ItemKey)
+		gotool.WriteTCPResponse(
+			conn, ResponseResult(0, "ok"),
+		)
 	} else {
 		gotool.WriteTCPResponse(
 			conn, ResponseResult(400400, ""),
@@ -84,30 +89,4 @@ func ResponseResult(errcode int, data string) []byte {
 	}
 	responseMessageByte, _ := json.Marshal(responseMessage)
 	return responseMessageByte
-}
-
-// 此函数用于其他工具调用 FirstKV 时使用
-func Send(conn net.Conn, msg ReceiveMessage) (ResponseMessage, error) {
-	defer conn.Close()
-	response := ResponseMessage{}
-	msgByte, _ := json.Marshal(msg)
-
-	// 写消息
-	err := gotool.WriteTCPResponse(conn, msgByte)
-	if err != nil {
-		return response, err
-	}
-
-	// 读取消息
-	buf, err := gotool.ReadTCPResponse(conn)
-	if err != nil {
-		return response, err
-	}
-	err = json.Unmarshal(buf, &response)
-	if err != nil {
-		return response, err
-	}
-
-	// 返回消息
-	return response, nil
 }
