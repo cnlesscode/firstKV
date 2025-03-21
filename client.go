@@ -8,8 +8,10 @@ import (
 )
 
 // 此函数用于其他工具调用 FirstKV 时使用
-func Send(conn net.Conn, msg ReceiveMessage) (ResponseMessage, error) {
-	defer conn.Close()
+func Send(conn net.Conn, msg ReceiveMessage, close bool) (ResponseMessage, error) {
+	if close {
+		defer conn.Close()
+	}
 	response := ResponseMessage{}
 	msgByte, _ := json.Marshal(msg)
 
